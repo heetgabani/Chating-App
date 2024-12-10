@@ -3,57 +3,70 @@ import { v4 as uuidv4 } from "uuid";
 import CryptoJS from "crypto-js";
 
 interface CreateRoomProps {
-  onRoomCreated: (roomId: string, joinUrl: string) => void;
+  onRoomCreated: (
+    roomId: string,
+    joinUrl: string,
+    encryptedPassword: string
+  ) => void;
 }
 
 const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
-  const [roomId, setRoomId] = useState<string | null>(null);
+  const [joinerPassword, setJoinerPassword] = useState<string>("");
   const [joinUrl, setJoinUrl] = useState<string | null>(null);
 
   const handleCreateRoom = () => {
-    const newRoomId = uuidv4(); // Generate a unique room ID
-    const password = "secretPassword"; // You can dynamically generate a secure password
-    const encryptedRoomId = CryptoJS.AES.encrypt(
-      newRoomId,
-      password
+    if (!joinerPassword) {
+      alert("Please enter a password from the joiner.");
+      return;
+    }
+
+    // Step 1: Generate a unique room ID
+    const newRoomId = uuidv4(); // Unique ID for the room
+
+    // Step 2: Encrypt the password provided by the joiner
+    const encryptedPassword = CryptoJS.AES.encrypt(
+      joinerPassword,
+      newRoomId
     ).toString();
 
-    // Store the encrypted room ID in localStorage with a key for password protection
-    localStorage.setItem(
-      encryptedRoomId,
-      JSON.stringify({ hashedKey: password })
-    );
+    // Step 3: Save the encrypted password in localStorage or any secure location (could be localStorage for simplicity)
+    localStorage.setItem(newRoomId, encryptedPassword);
 
-    // Create the URL with encrypted room ID and password
-    const joinLink = `${window.location.origin}/join?roomId=${encodeURIComponent(
-      encryptedRoomId
-    )}&password=${encodeURIComponent(password)}`;
+    // Step 4: Generate the join URL for the joiner
+    const joinLink = `${window.location.origin}/join?roomId=${encodeURIComponent(newRoomId)}&password=${encodeURIComponent(encryptedPassword)}`;
 
-    setRoomId(newRoomId);
+    // Step 5: Set the join URL for the creator
     setJoinUrl(joinLink);
-    onRoomCreated(newRoomId, joinLink);
-  };
 
-  const handleCopyJoinLink = () => {
-    if (joinUrl) {
-      navigator.clipboard
-        .writeText(joinUrl)
-        .then(() => alert("Join link copied to clipboard!"))
-        .catch((err) => alert("Failed to copy join link."));
-    }
+    // Step 6: Call the onRoomCreated function passed from the parent component
+    onRoomCreated(newRoomId, joinLink, encryptedPassword);
   };
 
   return (
     <div className="create-room">
       <h2>Create a Room</h2>
+      <label>
+        Joiner Password:
+        <input
+          type="password"
+          value={joinerPassword}
+          onChange={(e) => setJoinerPassword(e.target.value)}
+        />
+      </label>
       <button onClick={handleCreateRoom}>Create Room</button>
+
       {joinUrl && (
-        <div className="join-url-display">
-          <p>Share this link with the person joining: </p>
-          <p>
-            <strong>{joinUrl}</strong>
-          </p>
-          <button onClick={handleCopyJoinLink}>Copy Join Link</button>
+        <div>
+          <h3>Join URL for the Joiner</h3>
+          <p>{joinUrl}</p>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(joinUrl);
+              alert("Join URL copied to clipboard!");
+            }}
+          >
+            Copy Join URL
+          </button>
         </div>
       )}
     </div>
