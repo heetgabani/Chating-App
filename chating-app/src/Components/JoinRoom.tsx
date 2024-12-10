@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { validateKey } from "../utils/crypto";
 
 interface JoinRoomProps {
   roomId: string;
@@ -12,24 +11,24 @@ const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onAccessGranted }) => {
   const handleJoinRoom = () => {
     const roomData = localStorage.getItem(roomId);
     if (!roomData) {
-      alert("Invalid room ID!");
+      alert("Room ID not found!");
       return;
     }
 
     const { hashedKey } = JSON.parse(roomData);
-    if (validateKey(roomKey, hashedKey)) {
+    if (roomKey === hashedKey) {
       onAccessGranted();
     } else {
-      alert("Invalid key! Access denied.");
+      alert("Invalid room key!");
     }
   };
 
   return (
     <div className="join-room">
-      <h2>Join Room</h2>
+      <h2>Join a Room</h2>
       <input
         type="text"
-        placeholder="Enter the room key"
+        placeholder="Enter room key"
         value={roomKey}
         onChange={(e) => setRoomKey(e.target.value)}
       />

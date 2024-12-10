@@ -1,43 +1,43 @@
 import React, { useState } from "react";
-import { hashKey } from "../utils/crypto";
 
 interface CreateRoomProps {
-  onRoomCreated: (roomId: string, hashedKey: string) => void;
+  onRoomCreated: (roomId: string) => void;
 }
 
 const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
-  const [roomKey, setRoomKey] = useState("");
+  const [roomId, setRoomId] = useState<string | null>(null);
 
   const handleCreateRoom = () => {
-    if (!roomKey.trim()) {
-      alert("Please enter a room key!");
-      return;
-    }
-
-    const roomId = `room-${Date.now()}`;
-    const hashedKey = hashKey(roomKey);
-
+    const newRoomId = `room-${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem(
-      roomId,
-      JSON.stringify({
-        hashedKey,
-        messages: [],
-      })
+      newRoomId,
+      JSON.stringify({ hashedKey: "defaultKey" })
     );
+    setRoomId(newRoomId);
+    onRoomCreated(newRoomId);
+  };
 
-    onRoomCreated(roomId, hashedKey);
+  const handleCopyRoomId = () => {
+    if (roomId) {
+      navigator.clipboard
+        .writeText(roomId)
+        .then(() => alert("Room ID copied to clipboard!"))
+        .catch((err) => alert("Failed to copy room ID."));
+    }
   };
 
   return (
     <div className="create-room">
       <h2>Create a Room</h2>
-      <input
-        type="text"
-        placeholder="Enter a room key"
-        value={roomKey}
-        onChange={(e) => setRoomKey(e.target.value)}
-      />
       <button onClick={handleCreateRoom}>Create Room</button>
+      {roomId && (
+        <div className="room-id-display">
+          <p>
+            Room ID: <strong>{roomId}</strong>
+          </p>
+          <button onClick={handleCopyRoomId}>Copy Room ID</button>
+        </div>
+      )}
     </div>
   );
 };
