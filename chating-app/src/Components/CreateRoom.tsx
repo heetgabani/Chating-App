@@ -1,28 +1,45 @@
 import React, { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import CryptoJS from "crypto-js";
 
 interface CreateRoomProps {
-  onRoomCreated: (roomId: string) => void;
+  onRoomCreated: (roomId: string, joinUrl: string) => void;
 }
 
 const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [joinUrl, setJoinUrl] = useState<string | null>(null);
 
   const handleCreateRoom = () => {
-    const newRoomId = `room-${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem(
+    const newRoomId = uuidv4(); // Generate a unique room ID
+    const password = "secretPassword"; // You can dynamically generate a secure password
+    const encryptedRoomId = CryptoJS.AES.encrypt(
       newRoomId,
-      JSON.stringify({ hashedKey: "defaultKey" })
+      password
+    ).toString();
+
+    // Store the encrypted room ID in localStorage with a key for password protection
+    localStorage.setItem(
+      encryptedRoomId,
+      JSON.stringify({ hashedKey: password })
     );
+
+    // Create the URL with encrypted room ID and password
+    const joinLink = `${window.location.origin}/join?roomId=${encodeURIComponent(
+      encryptedRoomId
+    )}&password=${encodeURIComponent(password)}`;
+
     setRoomId(newRoomId);
-    onRoomCreated(newRoomId);
+    setJoinUrl(joinLink);
+    onRoomCreated(newRoomId, joinLink);
   };
 
-  const handleCopyRoomId = () => {
-    if (roomId) {
+  const handleCopyJoinLink = () => {
+    if (joinUrl) {
       navigator.clipboard
-        .writeText(roomId)
-        .then(() => alert("Room ID copied to clipboard!"))
-        .catch((err) => alert("Failed to copy room ID."));
+        .writeText(joinUrl)
+        .then(() => alert("Join link copied to clipboard!"))
+        .catch((err) => alert("Failed to copy join link."));
     }
   };
 
@@ -30,12 +47,13 @@ const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
     <div className="create-room">
       <h2>Create a Room</h2>
       <button onClick={handleCreateRoom}>Create Room</button>
-      {roomId && (
-        <div className="room-id-display">
+      {joinUrl && (
+        <div className="join-url-display">
+          <p>Share this link with the person joining: </p>
           <p>
-            Room ID: <strong>{roomId}</strong>
+            <strong>{joinUrl}</strong>
           </p>
-          <button onClick={handleCopyRoomId}>Copy Room ID</button>
+          <button onClick={handleCopyJoinLink}>Copy Join Link</button>
         </div>
       )}
     </div>

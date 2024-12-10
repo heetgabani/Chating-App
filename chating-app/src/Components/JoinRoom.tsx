@@ -1,38 +1,50 @@
 import React, { useState } from "react";
+import CryptoJS from "crypto-js";
 
 interface JoinRoomProps {
   roomId: string;
+  password: string;
   onAccessGranted: () => void;
 }
 
-const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onAccessGranted }) => {
-  const [roomKey, setRoomKey] = useState("");
+const JoinRoom: React.FC<JoinRoomProps> = ({
+  roomId,
+  password,
+  onAccessGranted,
+}) => {
+  const [inputPassword, setInputPassword] = useState<string>("");
 
   const handleJoinRoom = () => {
-    const roomData = localStorage.getItem(roomId);
-    if (!roomData) {
-      alert("Room ID not found!");
-      return;
-    }
+    try {
+      const decryptedRoomId = CryptoJS.AES.decrypt(roomId, password).toString(
+        CryptoJS.enc.Utf8
+      );
 
-    const { hashedKey } = JSON.parse(roomData);
-    if (roomKey === hashedKey) {
-      onAccessGranted();
-    } else {
-      alert("Invalid room key!");
+      if (decryptedRoomId) {
+        const storedRoom = localStorage.getItem(decryptedRoomId);
+        if (!storedRoom) {
+          alert("Room does not exist!");
+          return;
+        }
+        onAccessGranted();
+      } else {
+        alert("Invalid room ID or password.");
+      }
+    } catch (error) {
+      alert("Failed to join room. Incorrect password.");
     }
   };
 
   return (
     <div className="join-room">
-      <h2>Join a Room</h2>
+      <h2>Join Room</h2>
       <input
-        type="text"
-        placeholder="Enter room key"
-        value={roomKey}
-        onChange={(e) => setRoomKey(e.target.value)}
+        type="password"
+        placeholder="Enter password"
+        value={inputPassword}
+        onChange={(e) => setInputPassword(e.target.value)}
       />
-      <button onClick={handleJoinRoom}>Join</button>
+      <button onClick={handleJoinRoom}>Join Room</button>
     </div>
   );
 };
